@@ -1,0 +1,12 @@
+# Option 1: local historical files
+python urban_growth_detector.py \
+  --geojson_t1 buildings_t1.geojson \
+  --geojson_t2 buildings_t2.geojson \
+  --out_dir outputs_austin
+
+# Option 2: Ohsome API + place
+python urban_growth_detector.py \
+  --place_name "Austin, Texas, USA" \
+  --time1 2018-01-01 \
+  --time2 2023-01-01 \
+  --out_dir outputs_austin

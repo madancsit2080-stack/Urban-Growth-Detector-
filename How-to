@@ -1,0 +1,104 @@
+Here is a complete tutorial on how to set up and use the **Urban Growth Detector** script.
+
+This tool helps you visualize and quantify how a city or region has grown by comparing OpenStreetMap (OSM) building footprints from two different time periods.
+
+---
+
+### Step 1: Prerequisites & Setup
+
+Before running the script, you need to install the required Python libraries. 
+
+1. **Save the script** to a file named `urban_growth.py`.
+2. **Create a `requirements.txt`** file in the same directory with the following content:
+   ```text
+   geopandas
+   shapely
+   pyproj
+   pandas
+   numpy
+   requests
+   matplotlib
+   contextily
+   scikit-learn
+   osmnx
+   ```
+3. **Install the dependencies** (it is highly recommended to use a virtual environment like `venv` or `conda`):
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+---
+
+### Step 2: How to Run the Tool
+
+You can run this script from your command line (terminal) in three different ways depending on what data you have.
+
+#### Option 1: By Place Name (Easiest Method)
+If you want to check the growth of a specific city, you can just provide its name and the two dates. The script will use `osmnx` to find the bounding box and the Ohsome API to fetch historical building data.
+
+```bash
+python urban_growth.py \
+  --place_name "Austin, Texas, USA" \
+  --time1 "2018-01-01" \
+  --time2 "2023-01-01" \
+  --out_dir "austin_growth"
+```
+
+#### Option 2: By Bounding Box (Precise Area)
+If your area isn't perfectly captured by a city name, you can pass a custom bounding box formatted as `min_longitude, min_latitude, max_longitude, max_latitude`.
+
+```bash
+python urban_growth.py \
+  --bbox "-97.8,30.2,-97.6,30.4" \
+  --time1 "2015-01-01" \
+  --time2 "2024-01-01" \
+  --out_dir "bbox_growth"
+```
+
+#### Option 3: Using Local GeoJSON Files (Offline/Custom Data)
+If you already have the building footprints for two different time periods downloaded as GeoJSON files, you can skip the API and process them locally. 
+
+```bash
+python urban_growth.py \
+  --geojson_t1 "path/to/buildings_2018.geojson" \
+  --geojson_t2 "path/to/buildings_2023.geojson" \
+  --out_dir "local_data_growth"
+```
+
+---
+
+### Step 3: Understanding the Outputs
+
+Once the script finishes running, navigate to the output directory you specified (defaults to `outputs/`). You will find the following files:
+
+1. **`urban_growth_map.png`**: A map visualization showing existing buildings in light gray and new/expanded buildings in red.
+2. **`metrics.json`**: A summary report of the growth. It looks something like this:
+   ```json
+   {
+     "built_area_t1_m2": 1500000.5,
+     "built_area_t2_m2": 1800000.0,
+     "newly_built_area_m2": 300000.0,
+     "newly_built_area_km2": 0.3,
+     "percent_growth_vs_t1": 20.0,
+     "count_growth_geoms": 450
+   }
+   ```
+3. **`urban_growth.geojson`**: The exact geometries of the new or expanded footprints. This file also includes a `hotspot_id` for clusters of new development.
+4. **`buildings_t1_projected.geojson` & `buildings_t2_projected.geojson`**: The cleaned, valid, and properly projected building footprint data for both time periods.
+
+---
+
+### Step 4: Advanced Tuning
+
+You can adjust the sensitivity of the detector using optional arguments:
+
+* **Filter tiny artifacts:** Small alignment errors between years can look like "growth". Use `--min_area_m2` to ignore polygons smaller than a certain size.
+  ```bash
+  python urban_growth.py --place_name "Denver, CO" --min_area_m2 15.0
+  ```
+* **Adjust Hotspot Clustering (DBSCAN):** The script groups nearby new buildings into "hotspots".
+  * `--dbscan_eps_m`: Maximum distance between buildings to be considered part of the same cluster (default: 300 meters).
+  * `--dbscan_min_samples`: Minimum number of new buildings required to form a cluster (default: 6).
+  ```bash
+  python urban_growth.py --place_name "Denver, CO" --dbscan_eps_m 500 --dbscan_min_samples 10
+  ```
